@@ -21,7 +21,6 @@ async function main() {
         role,
       },
     });
-    // console.log(`  Created user: ${user.email} with role: ${user.role}`);
   });
   for (const data of config.defaultData) {
     const condition = data.condition as Condition || Condition.good;
