@@ -9,7 +9,6 @@ import { EditStuffSchema } from '@/lib/validationSchemas';
 import { editStuff } from '@/lib/dbActions';
 
 const onSubmit = async (data: Stuff) => {
-  // console.log(`onSubmit data: ${JSON.stringify(data, null, 2)}`);
   await editStuff(data);
   swal('Success', 'Your item has been updated', 'success', {
     timer: 2000,
@@ -25,7 +24,6 @@ const EditStuffForm = ({ stuff }: { stuff: Stuff }) => {
   } = useForm<Stuff>({
     resolver: yupResolver(EditStuffSchema),
   });
-  // console.log(stuff);
 
   return (
     <Container className="py-3">
