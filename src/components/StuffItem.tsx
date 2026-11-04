@@ -1,7 +1,7 @@
 import { Stuff } from '@prisma/client';
 import Link from 'next/link';
 
-/* Renders a single row in the List Stuff table. See list/page.tsx. */
+
 const StuffItem = ({ name, quantity, condition, id }: Stuff) => (
   <tr>
     <td>{name}</td>

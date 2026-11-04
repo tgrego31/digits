@@ -17,15 +17,11 @@ const authOptions: NextAuthConfig = {
         email: { label: 'Email', type: 'email', placeholder: 'john@foo.com' },
         password: { label: 'Password', type: 'password' },
       },
-      // You should define authorize here if needed
     }),
   ],
   pages: {
     signIn: '/auth/signin',
     signOut: '/auth/signout',
-    //   error: '/auth/error',
-    //   verifyRequest: '/auth/verify-request',
-    //   newUser: '/auth/new-user'
   },
   callbacks: {
     session({ session, token }) {
