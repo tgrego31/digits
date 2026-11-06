@@ -1,10 +1,7 @@
--- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
--- CreateEnum
 CREATE TYPE "Condition" AS ENUM ('excellent', 'good', 'fair', 'poor');
 
--- CreateTable
 CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
@@ -14,7 +11,6 @@ CREATE TABLE "User" (
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
 CREATE TABLE "Stuff" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
@@ -25,5 +21,4 @@ CREATE TABLE "Stuff" (
     CONSTRAINT "Stuff_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
