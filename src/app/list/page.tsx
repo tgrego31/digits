@@ -1,47 +1,26 @@
-import { Col, Container, Row, Table } from 'react-bootstrap';
-import { prisma } from '@/lib/prisma';
-import StuffItem from '@/components/StuffItem';
-import { loggedInProtectedPage } from '@/lib/page-protection';
+import { Col, Container, Row } from 'react-bootstrap';
 import { auth } from '@/lib/auth';
+import { loggedInProtectedPage } from '@/lib/page-protection';
+import { prisma } from '@/lib/prisma';
+import ContactCard from '@/components/ContactCard';
 
-/** Render a list of stuff for the logged in user. */
 const ListPage = async () => {
-  // Protect the page, only logged in users can access it.
   const session = await auth();
-  loggedInProtectedPage(
-    session as {
-      user: { email: string; id: string; name: string };
-    } | null,
-  );
-  const owner = (session && session.user && session.user.email) || '';
-  const stuff = await prisma.stuff.findMany({
-    where: {
-      owner,
-    },
-  });
-  // console.log(stuff);
+  loggedInProtectedPage(session as { user: { email: string; id: string; name: string } } | null);
+  const owner = session?.user?.email ?? '';
+  const contacts = await prisma.contact.findMany({ where: { owner }, orderBy: { id: 'asc' } });
+  const notes = await prisma.note.findMany({ where: { owner }, orderBy: { createdAt: 'asc' } });
+
   return (
-    <main>
-      <Container id="list" fluid className="py-3">
-        <Row>
-          <Col>
-            <h1>Stuff</h1>
-            <Table striped bordered hover>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Quantity</th>
-                  <th>Condition</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stuff.map((item) => (
-                  <StuffItem key={item.id} {...item} />
-                ))}
-              </tbody>
-            </Table>
-          </Col>
+    <main className="flex-grow-1">
+      <Container id="list" fluid className="px-4 px-md-5 py-2">
+        <h2 className="text-center mb-4">List Contacts</h2>
+        <Row xs={1} md={2} lg={3} className="g-4">
+          {contacts.map((contact) => (
+            <Col key={contact.id}>
+              <ContactCard contact={contact} notes={notes.filter((note) => note.contactId === contact.id)} />
+            </Col>
+          ))}
         </Row>
       </Container>
     </main>

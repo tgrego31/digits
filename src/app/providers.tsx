@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react'; // v5 compatible
+import { SessionProvider } from 'next-auth/react';
 
 type Props = {
   children?: React.ReactNode;
