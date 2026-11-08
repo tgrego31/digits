@@ -4,14 +4,12 @@ import { Condition } from '@prisma/client';
 import { Stuff } from '@prisma/client';
 import { hash } from 'bcrypt';
 import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { AddContactSchema, AddNoteSchema, EditContactSchema } from '@/lib/validationSchemas';
 import { prisma } from './prisma';
 
-/**
- * Adds a new stuff to the database.
- * @param stuff, an object with the following properties: name, quantity, owner, condition.
- */
+
 export async function addStuff(stuff: { name: string; quantity: number; owner: string; condition: string }) {
-  // console.log(`addStuff data: ${JSON.stringify(stuff, null, 2)}`);
   let condition: Condition = 'good';
   if (stuff.condition === 'poor') {
     condition = 'poor';
@@ -28,16 +26,11 @@ export async function addStuff(stuff: { name: string; quantity: number; owner: s
       condition,
     },
   });
-  // After adding, redirect to the list page
   redirect('/list');
 }
 
-/**
- * Edits an existing stuff in the database.
- * @param stuff, an object with the following properties: id, name, quantity, owner, condition.
- */
+
 export async function editStuff(stuff: Stuff) {
-  // console.log(`editStuff data: ${JSON.stringify(stuff, null, 2)}`);
   await prisma.stuff.update({
     where: { id: stuff.id },
     data: {
@@ -47,29 +40,19 @@ export async function editStuff(stuff: Stuff) {
       condition: stuff.condition,
     },
   });
-  // After updating, redirect to the list page
   redirect('/list');
 }
 
-/**
- * Deletes an existing stuff from the database.
- * @param id, the id of the stuff to delete.
- */
+
 export async function deleteStuff(id: number) {
-  // console.log(`deleteStuff id: ${id}`);
   await prisma.stuff.delete({
     where: { id },
   });
-  // After deleting, redirect to the list page
   redirect('/list');
 }
 
-/**
- * Creates a new user in the database.
- * @param credentials, an object with the following properties: email, password.
- */
+
 export async function createUser(credentials: { email: string; password: string }) {
-  // console.log(`createUser data: ${JSON.stringify(credentials, null, 2)}`);
   const password = await hash(credentials.password, 10);
   await prisma.user.create({
     data: {
@@ -79,12 +62,8 @@ export async function createUser(credentials: { email: string; password: string 
   });
 }
 
-/**
- * Changes the password of an existing user in the database.
- * @param credentials, an object with the following properties: email, password.
- */
+
 export async function changePassword(credentials: { email: string; password: string }) {
-  // console.log(`changePassword data: ${JSON.stringify(credentials, null, 2)}`);
   const password = await hash(credentials.password, 10);
   await prisma.user.update({
     where: { email: credentials.email },
@@ -92,4 +71,80 @@ export async function changePassword(credentials: { email: string; password: str
       password,
     },
   });
+}
+
+export async function addContact(contact: {
+  firstName: string;
+  lastName: string;
+  address: string;
+  image: string;
+  description: string;
+  owner: string;
+}) {
+  const session = await auth();
+  const owner = session?.user?.email;
+  if (!owner) {
+    redirect('/auth/signin');
+  }
+
+  const data = await AddContactSchema.validate(contact, { abortEarly: false, stripUnknown: true });
+  await prisma.contact.create({ data: { ...data, owner } });
+  redirect('/list');
+}
+
+export async function editContact(contact: {
+  id: number;
+  firstName: string;
+  lastName: string;
+  address: string;
+  image: string;
+  description: string;
+  owner: string;
+}) {
+  const session = await auth();
+  const owner = session?.user?.email;
+  if (!owner) {
+    redirect('/auth/signin');
+  }
+
+  const data = await EditContactSchema.validate(contact, { abortEarly: false, stripUnknown: true });
+  const result = await prisma.contact.updateMany({
+    where: { id: data.id, owner },
+    data: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      address: data.address,
+      image: data.image,
+      description: data.description,
+    },
+  });
+
+  if (result.count === 0) {
+    throw new Error('Contact not found or not authorized');
+  }
+
+  redirect('/list');
+}
+
+export async function addNote(values: { note: string; contactId: number; owner: string }) {
+  const session = await auth();
+  const owner = session?.user?.email;
+  if (!owner) {
+    redirect('/auth/signin');
+  }
+
+  const data = await AddNoteSchema.validate(values, { abortEarly: false, stripUnknown: true });
+  const contact = await prisma.contact.findFirst({ where: { id: data.contactId, owner }, select: { id: true } });
+  if (!contact) {
+    throw new Error('Contact not found or not authorized');
+  }
+
+  await prisma.note.create({
+    data: {
+      note: data.note,
+      contactId: contact.id,
+      owner,
+    },
+  });
+  redirect('/list');
 }
