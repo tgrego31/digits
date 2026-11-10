@@ -1,33 +1,21 @@
 import { test, expect } from './auth-utils';
 
 test.slow();
-test('can authenticate a specific user', async ({ getUserPage }) => {
 
-  // Call the getUserPage fixture with users signin info to get authenticated session for user
-  const customUserPage = await getUserPage('john@foo.com', 'changeme');
+test('a signed-in user can see the contact pages', async ({ getUserPage }) => {
+  const page = await getUserPage('john@foo.com', 'changeme');
+  await page.goto('http://localhost:3000/');
+  await expect(page.getByRole('button', { name: 'john@foo.com' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Add Contact' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'List Contacts' })).toBeVisible();
 
-  // Navigate to the home page and wait for post-login indicator
-  await customUserPage.goto('http://localhost:3000/');
-  await expect(
-    customUserPage.getByRole('button', { name: 'john@foo.com' })
-  ).toBeVisible({ timeout: 10000 });
+  await page.getByRole('link', { name: 'Add Contact' }).click();
+  await expect(page.getByRole('heading', { name: 'Add Contact' })).toBeVisible();
 
-  // Now check for navigation links and headings
-  await expect(
-    customUserPage.getByRole('link', { name: 'Add Stuff' })
-  ).toBeVisible({ timeout: 5000 });
-  await expect(
-    customUserPage.getByRole('link', { name: 'List Stuff' })
-  ).toBeVisible({ timeout: 5000 });
-
-  await customUserPage.getByRole('link', { name: 'Add Stuff' }).click();
-  await expect(
-    customUserPage.getByRole('heading', { name: 'Add Stuff' })
-  ).toBeVisible({ timeout: 5000 });
-
-  await customUserPage.getByRole('link', { name: 'List Stuff' }).click();
-  await expect(
-    customUserPage.getByRole('heading', { name: 'Stuff' })
-  ).toBeVisible({ timeout: 5000 });
-
+  await page.getByRole('link', { name: 'List Contacts' }).click();
+  await expect(page.getByRole('heading', { name: 'List Contacts' })).toBeVisible();
+  await expect(page.getByText('Philip Johnson')).toBeVisible();
+  await expect(page.getByText('Henri Casanova')).toBeVisible();
+  await expect(page.getByText('Kim Binsted')).toHaveCount(0);
+  await expect(page.getByText('Add Timestamped Note')).toHaveCount(2);
 });

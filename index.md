@@ -1,490 +1,121 @@
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/landing-page.png)
+<img src="doc/landing.png" alt="Digits landing page showing Multiple Users, Contact Details, and Timestamped Notes" width="100%">
 
-nextjs-application-template is a sample Next.js 16 application that illustrates:
+# Digits — Contact Manager
 
-- A standard directory layout using 'src/' as recommended in the [Next.js Project Structure](https://nextjs.org/docs/getting-started/project-structure) guide.
-- [Bootstrap 5 React](https://react-bootstrap.github.io/) for user interface.
-- [React Hook Form](https://www.react-hook-form.com/) for form development.
-- Authorization, authentication, and registration using [NextAuth.js](https://next-auth.js.org/).
-- Initialization of users and data from a settings file.
-- Alerts regarding success or failure of DB updates using [Sweet Alert](https://sweetalert.js.org/).
-- Quality assurance using [ESLint](http://eslint.org) with packages to partially enforce the [Next.js ESLint rules](https://nextjs.org/docs/app/building-your-application/configuring/eslint).
-
-The goal of this template is to help you get quickly started doing Next.js development by providing a reasonable directory structure for development and deployment, a set of common extensions to the core framework, and boilerplate code to implement basic page display, navigation, forms, roles, and database manipulation.
-
-To keep this codebase simple and small, some important capabilities are intentionally excluded from this template:
-
-- Unit Testing
-- Security
-- Deployment
-
-Examples of the these capabilities will be provided elsewhere.
+Digits is a Next.js application for managing personal business contacts and recording timestamped notes about conversations. Each user sees their own contacts and notes, while administrators can view the contacts of all users.
 
 ## Installation
 
-First, [install PostgreSQL](https://www.postgresql.org/download/). Then create a database for your application.
+You need Node.js, npm, and PostgreSQL installed locally. Clone this repository and open its root folder in VS Code or a terminal.
 
+1. Start PostgreSQL and create a database named `digits`:
+
+   ```cmd
+   createdb -U postgres digits
+   ```
+
+   You can also create the `digits` database through pgAdmin. Skip this command if the database already exists.
+
+2. Install the dependencies:
+
+   ```cmd
+   npm install
+   ```
+
+3. Copy `.env.example` to `.env` and provide your local PostgreSQL password. Set `AUTH_SECRET` to a strong random value. To generate a secret in a terminal:
+
+   ```cmd
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+   ```
+
+4. Generate Prisma Client and apply the database migrations:
+
+   ```cmd
+   npx prisma generate
+   npx prisma migrate dev
+   ```
+
+5. Populate the development database with the sample accounts and contacts:
+
+   ```cmd
+   npx prisma db seed
+   ```
+
+6. Start the application:
+
+   ```cmd
+   npm run dev
+   ```
+
+7. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+For the sample seeded database, the development accounts are `john@foo.com` (user) and `admin@foo.com` (admin). Both use the password `changeme`. These accounts are for local practice only.
+
+**Existing databases:** The cleanup migration removes the unused template inventory table and enum. It does not delete Contacts or Notes. Back up your database before running migrations if it contains data you want to retain. Do not reset or drop your database unless you intentionally want to erase its contents.
+
+## Application walkthrough
+
+### Landing page
+
+The home page presents the three core features: support for multiple users, storage of contact details, and timestamped notes. Visitors can use the Login dropdown to sign in or register.
+
+### Sign in and registration
+
+Users can sign in with an existing account or register a new one. Pages that modify contacts require an authenticated session. Users can also change their password using the account menu.
+
+### List Contacts
+
+<img src="doc/list-contacts.png" alt="List Contacts showing contact cards for the signed-in user" width="100%">
+
+After signing in, **List Contacts** (`/list`) shows cards with each contact's name, address, photograph, and description. The page only queries contacts belonging to the current user. Each contact card also displays its saved notes, an Add Timestamped Note form, and an Edit link.
+
+### Add Contact
+
+<img src="doc/add-contact.png" alt="Add Contact form with five fields" width="100%">
+
+Use **Add Contact** (`/add`) to enter a first name, last name, address, image URL, and description. Submit saves the new contact under the logged-in account. Reset clears entered changes.
+
+### Edit Contact
+
+<img src="doc/edit-contact.png" alt="Edit Contact form populated with an existing contact" width="100%">
+
+Select **Edit** from a card to open `/edit/<contact-id>`. The form loads the existing contact information and saves permitted updates. Users may only edit contacts they own.
+
+### Timestamped Notes
+
+<img src="doc/notes.png" alt="List Contacts cards with an Add Timestamped Note form and a saved dated note" width="100%">
+
+Each contact card includes **Add Timestamped Note**. A note is linked to its contact, saved with the current timestamp, and displayed under that contact after submission. The date and text remain available after the page is refreshed.
+
+### Admin page
+
+<img src="doc/admin-contact-example.png" alt="Administrator contact card example" width="100%">
+
+An administrator can access **Admin** (`/admin`) to see contacts across all accounts, along with their associated notes and owner email. Ordinary users cannot access this page.
+
+## Data model
+
+The PostgreSQL database uses three Prisma models:
+
+- **User:** email, password hash, and role.
+- **Contact:** first name, last name, address, image, description, and owner.
+- **Note:** note text, linked contact ID, owner, and creation time.
+
+A Contact has many Notes, while every Note references one Contact.
+
+## Verify the project
+
+Run the source checks after installing dependencies:
+
+```cmd
+npm run lint
+npx tsc --noEmit
 ```
 
-$ createdb nextjs-application-template
-Password:
-$
+Check the application by signing in as John, viewing Philip Johnson and Henri Casanova on `/list`, and adding a note to one contact. Sign in as Admin to view all sample contacts on `/admin`.
 
-```
+## GitHub Pages
 
-Second, go to [https://github.com/ics-software-engineering/nextjs-application-template](https://github.com/ics-software-engineering/nextjs-application-template), and click the "Use this template" button. Complete the dialog box to create a new repository that you own that is initialized with this template's files.
+This `index.md` file is the public project documentation. GitHub Pages serves the documentation and screenshots, not the running Next.js/PostgreSQL application.
 
-Third, go to your newly created repository, and click the "Clone or download" button to download your new GitHub repo to your local file system. Using [GitHub Desktop](https://desktop.github.com/) is a great choice if you use MacOS or Windows.
-
-Fourth, cd into the directory of your local copy of the repo, and install third party libraries with:
-
-```
-
-$ npm install
-
-```
-
-Fifth, create a `.env` file from the `sample.env`. Edit the line `DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"` to match your setup. Replace `mydb` with the PostgreSQL database that you created in the first step (in the example for this step the database is `nextjs-application-template`). replace `johndoe:randompassword` with a username and password you created for this db. If you did not create a user for this database, you can use the `postgress` user with the password you set when you installed postgress. Note: this is not a recommdened practice since the `postgres` user is an admin with full access to postgres. 
-
-See the Prisma docs [Connect your database](https://www.prisma.io/docs/prisma-orm/add-to-existing-project/postgresql#3-connect-your-database). 
-
-Then run the Prisma migration `npx prisma migrate dev` to set up the PostgreSQL tables.
-
-```
-$ npx prisma migrate dev
-Loaded Prisma config from prisma.config.ts.
-
-Prisma schema loaded from prisma/schema.prisma.
-Datasource "db": PostgreSQL database "mydb", schema "public" at "localhost:5432"
-
-Applying migration `20260301195634_init`
-
-The following migration(s) have been applied:
-
-migrations/
-  └─ 20260301195634_init/
-    └─ migration.sql
-
-Your database is now in sync with your schema.
-
-$
-
-```
-
-Create the Prisma Client by running the command `npx prisma generate`. This will create the Prisma Client in the `generated/prisma` directory, which is used by the application to interact with the database.
-
-```
-$ npx prisma generate
-
-Loaded Prisma config from prisma.config.ts.
-
-Prisma schema loaded from prisma/schema.prisma.
-
-Generated Prisma Client (7.4.2) to ./generated/prisma in 80ms
- 
-```
-
-Then seed the database with the `/config/settings.development.json` data using `npm run seed`.
-
-```
-
-$ npm run seed  
-
-> nextjs-application-template-s26@0.1.0 seed
-> npx tsx src/seed.ts
-
-Seeding the database
-  Creating user: admin@foo.com with role: ADMIN
-  Creating user: john@foo.com with role: USER
-  Adding stuff: {"name":"Basket","quantity":3,"owner":"john@foo.com","condition":"excellent"}
-  Adding stuff: {"name":"Bicycle","quantity":2,"owner":"john@foo.com","condition":"poor"}
-  Adding stuff: {"name":"Banana","quantity":2,"owner":"admin@foo.com","condition":"good"}
-  Adding stuff: {"name":"Boogie Board","quantity":2,"owner":"admin@foo.com","condition":"excellent"}
-$
-
-```
-
-## Running the system
-
-Once the libraries are installed and the database seeded, you can run the application by invoking the "dev" script in the [package.json file](https://github.com/ics-software-engineering/nextjs-application-template/blob/master/app/package.json):
-
-```
-
-$ npm run dev
-
-> nextjs-application-template-s26@0.1.0 dev
-> next dev
-
-▲ Next.js 16.1.6 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://XXX.XXX.XXX.XXX:3000
-- Environments: .env
-
-✓ Starting...
-✓ Ready in 821ms
-
-```
-
-### Viewing the running app
-
-If all goes well, the template application will appear at [http://localhost:3000](http://localhost:3000). You can login using the credentials in [settings.development.json](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/config/settings.development.json), or else register a new account.
-
-
-### ESLint
-You can verify that the code obeys our coding standards by running ESLint over the code in the src/ directory with:
-
-```
-$ npm run lint
-
-> nextjs-application-template-1@0.1.0 lint
-> next lint
-
-✔ No ESLint warnings or errors
-$
-```
-
-### Building the App
-
-To build the application for production deployment, use the following command:
-
-```bash
-$ npm run build
-```
-
-This will compile the Next.js application and output the production build to the `.next/` directory.
-
-After building, you can start the production server with:
-
-```bash
-$ npm start
-```
-
-Make sure your environment variables and database are properly configured before building for production.
-
-### Testing
-This project uses [Playwright](https://playwright.dev/) for end-to-end and authentication testing. Tests are located in the `tests/` directory and cover user flows, authentication, and admin features.
-
-To run all tests:
-
-```
-$ npx playwright test
-```
-
-You can run tests for a specific file:
-
-```
-$ npx playwright test tests/john-pages.spec.ts
-```
-
-To view tests in headed mode (see the browser UI):
-
-```
-$ npx playwright test --headed
-```
-
-For more information, see the [Playwright documentation](https://playwright.dev/).
-
-
-## Walkthrough
-
-The following sections describe the major features of this template.
-
-### Directory structure
-
-The top-level directory structure is:
-
-```
-
-.github # holds the GitHub Continuous Integration action and Issue template.
-
-config/ # holds configuration files, such as settings.development.json
-
-doc/ # holds developer documentation, user guides, etc.
-
-prisma/ # holds the Prisma ORM schema and seed.ts files.
-
-public/ # holds the public images.
-
-src/ # holds the application files.
-
-tests/ # holds the Playwright acceptance tests.
-
-.eslintrc.json # The ESLint configuration.
-
-.gitignore # don't commit VSCode settings files, node_modules, and settings.production.json
-
-```
-
-This structure separates documentation files (such as screenshots) and configuration files (such as the settings files) from the actual Next.js application.
-
-The src/ directory has this structure:
-
-```
-
-app/
-
-  add/ # The add route
-    page.tsx # The Add Stuff Page
-
-  admin/
-    page.tsx # The Admin Page
-
-  api/auth/[...nextauth]/
-    route.ts # The NextAuth configuration
-
-  auth/
-    change-password/
-      page.tsx # The Change Password Page
-
-    signin/
-      page.tsx # The Sign In Page
-
-    signout/
-      page.tsx # The Sign Out Page
-
-    signup/
-      page.tsx # The Sign Up / Register Page
-
-  edit/
-    page.tsx # The Edit Stuff Page
-
-  list/
-    page.tsx # The List Stuff Page
-
-  not-authorized/
-    page.tsx # The Not Authorized Page
-
-  layout.tsx # The layout of the application
-
-  page.tsx # The Landing Page
-
-  providers.tsx # Session providers.
-
-  components/
-    AddStuffForm.tsx # The React Hook Form for adding stuff.
-
-    EditStuffForm.tsx # The Edit Stuff Form.
-
-    Footer.tsx # The application footer.
-
-    LoadingSpinner.tsx # Indicates working.
-
-    Navbar.tsx # The application navbar.
-
-    StuffItem.tsx # Row in the list stuff page.
-
-    StuffItemAdmin.tsx # Row in the admin list stuff page.
-
-  lib/
-
-    dbActions.ts # Functions to manipulate the Postgres database.
-
-    page-protections.ts # Functions to check for logged in users and their roles.
-
-    prisma.ts # Singleton Prisma client.
-
-    validationSchemas.ts # Yup schemas for validating forms.
-
-  tests/ # playwright acceptance tests.
-
-```
-
-### Application functionality
-
-The application implements a simple CRUD application for managing "Stuff", which is a PostgreSQL table consisting of a name (String), a quantity (Number), a condition (one of 'excellent', 'good', 'fair', or 'poor') and an owner.
-
-By default, each user only sees the Stuff that they have created. However, the settings file enables you to define default accounts. If you define a user with the role "admin", then that user gets access to a special page which lists all the Stuff defined by all users.
-
-#### Landing page
-
-When you retrieve the app at http://localhost:3000, this is what should be displayed:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/landing-page.png)
-
-The next step is to use the Login menu to either Login to an existing account or register a new account.
-
-#### Login page
-
-Clicking on the Login link, then on the Sign In menu item displays this page:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/signin-page.png)
-
-#### Register page
-
-Alternatively, clicking on the Login link, then on the Sign Up menu item displays this page:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/register-page.png)
-
-#### Landing (after Login) page, non-Admin user
-
-Once you log in (either to an existing account or by creating a new one), the navbar changes as follows:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/landing-after-login-page.png)
-
-You can now add new Stuff documents, and list the Stuff you have created. Note you cannot see any Stuff created by other users.
-
-#### Add Stuff page
-
-After logging in, here is the page that allows you to add new Stuff:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/add-stuff-page.png)
-
-#### List Stuff page
-
-After logging in, here is the page that allows you to list all the Stuff you have created:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/list-stuff-page.png)
-
-You click the "Edit" link to go to the Edit Stuff page, shown next.
-
-#### Edit Stuff page
-
-After clicking on the "Edit" link associated with an item, this page displays that allows you to change and save it:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/edit-stuff-page.png)
-
-#### Landing (after Login), Admin user
-
-You can define an "admin" user in the settings.json file. This user, after logging in, gets a special entry in the navbar:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/admin-landing-page.png)
-
-#### Admin page (list all users stuff)
-
-To provide a simple example of a "super power" for Admin users, the Admin page lists all of the Stuff by all of the users:
-
-![](https://github.com/ics-software-engineering/nextjs-application-template/raw/main/doc/admin-list-stuff-page.png)
-
-Note that non-admin users cannot get to this page, even if they type in the URL by hand.
-### Tables
-
-The application implements two tables "Stuff" and "User". Each Stuff row has the following columns: id, name, quantity, condition, and owner. The User table has the following columns: id, email, password (hashed using bcrypt), role.
-
-The Stuff and User models are defined in [prisma/schema.prisma](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/prisma/schema.prisma).
-
-The tables are initialized in [prisma/seed.ts](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/prisma/seed.ts) using the command `npx prisma db seed`.
-
-### CSS
-
-The application uses the [React implementation of Bootstrap 5](https://react-bootstrap.github.io/). You can adjust the theme by editing the `src/app/globals.css` file. To change the theme override the Bootstrap 5 CSS variables.
-
-```css
-/* Change bootstrap variable values.
- See https://getbootstrap.com/docs/5.2/customize/css-variables/
- */
-body {
-  --bs-light-rgb: 236, 236, 236;
-}
-
-/* Define custom styles */
-.gray-background {
-  background-color: var(--bs-gray-200);
-  color: var(--bs-dark);
-  padding-top: 10px;
-  padding-bottom: 20px;
-}
-```
-
-### Routing
-
-For display and navigation among its four pages, the application uses [Next.js App Router](https://nextjs.org/docs/app/building-your-application/routing).
-
-Routing is defined by the directory structure.
-
-### Authentication
-
-For authentication, the application uses the NextAuth package.
-
-When the database is seeded, a settings file (such as [config/settings.development.json](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/config/settings.development.json)) is used to create users and stuff in the PostgreSQL database. That will lead to a default accounts being created.
-
-The application allows users to register and create new accounts at any time.
-
-### Authorization
-
-Only logged in users can manipulate Stuff items (but any registered user can manipulate any Stuff item, even if they weren't the user that created it.)
-
-### Configuration
-
-The [config](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/config) directory is intended to hold settings files. The repository contains one file: [config/settings.development.json](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/config/settings.development.json).
-
-The [.gitignore](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/.gitignore) file prevents a file named settings.production.json from being committed to the repository. So, if you are deploying the application, you can put settings in a file named settings.production.json and it will not be committed.
-
-### Quality Assurance
-
-#### ESLint
-
-The application includes a [.eslintrc.json](https://github.com/ics-software-engineering/nextjs-application-template/blob/main/.eslintrc.json) file to define the coding style adhered to in this application. You can invoke ESLint from the command line as follows:
-
-```
-[~/nextjs-application-template]-> npm run lint
-
-> nextjs-application-template-1@0.1.0 lint
-> next lint
-
-✔ No ESLint warnings or errors
-[~/nextjs-application-template]->
-```
-
-ESLint should run without generating any errors.
-
-It's significantly easier to do development with ESLint integrated directly into your IDE (such as VSCode).
-
-
-#### Playwright End-to-End Testing
-
-This project uses [Playwright](https://playwright.dev/) for end-to-end and authentication testing. Playwright tests are located in the `tests/` directory and cover user flows, authentication, and admin features. These tests help ensure that the application works as expected from the user's perspective and that critical workflows are protected against regressions.
-
-**How to run Playwright tests:**
-
-- To run all tests:
-
-  ```
-  npx playwright test
-  ```
-
-- To run tests for a specific file:
-
-  ```
-  npx playwright test tests/john-pages.spec.ts
-  ```
-
-- To view tests in headed mode (see the browser UI):
-
-  ```
-  npx playwright test --headed
-  ```
-
-For more information, see the [Playwright documentation](https://playwright.dev/).
-
-
-#### Continuous Integration (CI)
-
-Continuous Integration is implemented using GitHub Actions. The workflow is defined in `.github/workflows/ci.yml` and runs automatically on every push or pull request to the `main` or `master` branches.
-
-The CI workflow performs the following steps:
-
-- Checks out the repository code.
-- Sets up Node.js and installs dependencies.
-- Installs Playwright browsers and dependencies.
-- Generates the Prisma client and runs database migrations.
-- Seeds the test database.
-- Runs ESLint to check code quality.
-- Builds the Next.js application.
-- Runs Playwright end-to-end tests.
-- Uploads the Playwright test report as a workflow artifact for review.
-
-The workflow uses a PostgreSQL service for testing and sets environment variables for the test environment. You can view and download the Playwright test report from the workflow run's summary page in GitHub Actions.
-
-For details, see the [`ci.yml` workflow file](.github/workflows/ci.yml).
-
-<!--
-## Screencasts
-
-For more information about this system, please watch one or more of the following screencasts. Note that the current source code might differ slightly from the code in these screencasts, but the changes should be very minor.
-
-- [Walkthrough of system user interface (6 min)](https://youtu.be/48xu1hrqUi8)
-- [Data and accounts structure and initialization (18 min)](https://youtu.be/HZRjwrVBWp4)
-- [Navigation, routing, pages, components (34 min)](https://youtu.be/XztTdHpv6Jw)
-- [Forms (32 min)](https://youtu.be/8FyWR3gUGCM)
-- [Authorization, authentication, and roles (12 min)](https://youtu.be/9HX5vuXTlvA)
--->
+After pushing your finalized code to the repository's `main` branch, go to **Settings → Pages → Build and deployment**, choose **Deploy from a branch**, select **main** and **/(root)**, then click **Save**. The site URL will appear in the Pages settings after publishing.
